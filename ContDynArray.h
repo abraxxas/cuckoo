@@ -16,6 +16,8 @@
  #include <stdlib.h> // For random(), RAND_MAX
  #include <limits.h> //For CHAR_BIT
  #include <random> //for random number gen
+ #include <algorithm> //find in vector
+
 
 
 
@@ -37,12 +39,14 @@ template <typename E, size_t N=7>
         //http://users.cis.fiu.edu/~weiss/dsaa_c++4/code/
         const int tMax = 10000; // max number of random walk trials
         int K; // number of probes
-        size_t number_max; // number of max elements
-        size_t number; // number of current elements
         size_t q=3;//exponent der aktuellen tabellengröße als 2er potenz
         E * H1;
         E * H2;
-        size_t * H1_indices,H2_indices;
+
+        std::vector<size_t> H1_indices;
+        std::vector<size_t> H2_indices;
+
+
 
         std::random_device rd; // only used once to initialise (seed) engine
 
@@ -105,9 +109,35 @@ public:
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
+        /*if (n + len > nmax) {
+                q++;//expoent der tabllengr als 2er potenz
+                nmax = pow(2,q); //increase nmax
+                //we need to allocate new H1 and H2 with new nmax and copy over the content of the old ones and then delete the old ones
+                //we also need to allocate new H1_indices and H2_indices
+           }*/
         for (size_t i = 0; i < len; ++i) {
-                H1[hash1(e[i])] = e[i];
-                std::cout << "H1[hash1(e[i])]: " << H1[hash1(e[i])] << "\n";
+                if (!member(e[i])) {
+                        if(!(std::find(H1_indices.begin(), H1_indices.end(), hash1(e[i])) != H1_indices.end())) {
+                                /* There is no element in H1 at the index position hash1(e[i]) */
+                                H1[hash1(e[i])] = e[i]; //insert elemnt into  H1
+                                H1_indices.push_back (hash1(e[i])); //add index to the vector to indicate there is an element at this index
+                                std::cout << "We added the value to H1" << "\n";
+                        } else if(!(std::find(H2_indices.begin(), H2_indices.end(), hash2(e[i])) != H2_indices.end())) {
+                                /* There is no element in H2 at the index position hash2(e[i]) */
+                                E tmp = H1[hash1(e[i])];
+                                H2[hash2(tmp)] = tmp; //move the conflicting element from H1 to H2
+                                H1[hash1(e[i])] = e[i]; //now insert elemnt into  H1
+                                H2_indices.push_back (hash2(tmp));
+                                std::cout << "We moved: " << H2[hash2(tmp)] << " from H1 to H2, and added: " << H1[hash1(e[i])] << " to H1\n";
+                        }else{ //both H1 and H2 have something at that their corresponding positions we now need to juggle this arround
+
+                        }
+
+
+                }else{
+                        std::cout << "this element is already a member \n";
+                }
+
         }
 
 
@@ -144,10 +174,19 @@ void ContDynArray<E,N>::remove(const E e[], size_t len) {
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member(const E &e) const {
-        if(H1[hash1(e)] == e || H2[hash2(e)] == e)
-                return true;
-        else
-                return false;
+        if(H1[hash1(e)] == e){
+          std::cout << "Found in H1\n";
+          return true;
+        }
+        else if(H2[hash2(e)] == e){
+          std::cout << "Found in H2\n";
+          return true;
+        }
+        else{
+          std::cout << "not found\n";
+          return false;
+        }
+
 }
 
 template <typename E, size_t N>
@@ -172,9 +211,18 @@ E ContDynArray<E,N>::max() const {
 
 template <typename E, size_t N>
 std::ostream& ContDynArray<E,N>::print(std::ostream& o) const {
-        o << "ContDynArray [ n=" << n << " nmax=" << nmax << " values=";
-        for (size_t i = 0; i < n; ++i) o << ' ' << values[i];
-        o << " ]";
+        o << "Indices used in H1:";
+        for (auto i = H1_indices.begin(); i != H1_indices.end(); ++i)
+                o << *i << ' ';
+        o << "\nIndices used in H2:";
+        for (auto i = H2_indices.begin(); i != H2_indices.end(); ++i)
+                o << *i << ' ';
+        o << "\nValues in H1:";
+        for (auto i = H1_indices.begin(); i != H1_indices.end(); ++i)
+                o << H1[*i] << ' ';
+        o << "\nValues in H2:";
+        for (auto i = H2_indices.begin(); i != H2_indices.end(); ++i)
+                o << H2[*i] << ' ';
         return o;
 }
 

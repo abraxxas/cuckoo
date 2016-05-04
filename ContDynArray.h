@@ -82,6 +82,8 @@ template <typename E, size_t N=8>
 
         void add_(const E&);
 
+        void resize();
+
         bool member1_(const E& e) const;
         bool member2_(const E& e) const;
 
@@ -145,12 +147,12 @@ void ContDynArray<E,N>::add_(const E &e) {
                         H1[pos1] = e; //now insert elemnt into  H1
                         std::cout << "We moved: " << H2[hash2(tmp)] << " from H1 to H2, and added: " << H1[pos1] << " to H1\n";
                         std::cout << "We will now call add again to add: " << tmp2 << " to the hashtable\n";
-                        if(t < tMax){
-                          t++;
-                          add_(tmp2);//call add again to store the element from the tmp2 variable
+                        if(t < tMax) {
+                                t++;
+                                add_(tmp2);//call add again to store the element from the tmp2 variable
                         }
                         else{
-                          std::cout << "we need to rehash\n";
+                                std::cout << "we need to rehash\n";
                         }
                 }
         }
@@ -158,8 +160,11 @@ void ContDynArray<E,N>::add_(const E &e) {
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
-        if (n + len > nmax) {//do we want to add more values than there is currently space?
+        std::cout << "n: " << n << " len: " << len << " nmax: " << nmax << "\n";
+        if (n + len > nmax) {//do we want to add more values than there is currently space? 50%auslastung
                 //to be implemented
+                std::cout << "50 prozent erreicht wie vergrößern!\n";
+                resize();
         }
 
         for (size_t i = 0; i < len; ++i) { //go through all values we where given
@@ -172,6 +177,35 @@ void ContDynArray<E,N>::add(const E e[], size_t len) {
                 }
 
         }
+}
+
+template <typename E, size_t N>
+void ContDynArray<E,N>::resize() {
+        size_t oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
+        q++; //increase q by 1
+        nmax = pow(2,q); //nmax als nächster 2er-potenz setzen
+
+        //save old stuff and allocate space for new stuff
+        E * old_H1 = H1;
+        E * old_H2 = H2;
+        Status * old_s1 = s1;
+        Status * old_s2 = s2;
+        H1 = new E[nmax];
+        H2 = new E[nmax];
+        s1 = new Status[nmax]();
+        s2 = new Status[nmax]();
+        //end of save old stuff and allocate space for new stuff
+
+        for (size_t i = 0; i < oldnmax; ++i)
+                if (old_s1[i] == Status::belegt) add_(old_H1[i]);
+        for (size_t i = 0; i < oldnmax; ++i)
+                if (old_s2[i] == Status::belegt) add_(old_H2[i]);
+
+        delete[] old_H1;
+        delete[] old_H2;
+        delete[] old_s1;
+        delete[] old_s2;
+
 }
 
 template <typename E, size_t N>

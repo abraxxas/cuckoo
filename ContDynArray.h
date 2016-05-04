@@ -83,6 +83,8 @@ template <typename E, size_t N=8>
         void add_(const E&);
 
         void resize();
+        void rehash();
+
 
         bool member1_(const E& e) const;
         bool member2_(const E& e) const;
@@ -153,6 +155,7 @@ void ContDynArray<E,N>::add_(const E &e) {
                         }
                         else{
                                 std::cout << "we need to rehash\n";
+                                rehash();
                         }
                 }
         }
@@ -163,7 +166,13 @@ void ContDynArray<E,N>::add(const E e[], size_t len) {
         std::cout << "n: " << n << " len: " << len << " nmax: " << nmax << "\n";
         if (n + len > nmax) {//do we want to add more values than there is currently space? 50%auslastung
                 //to be implemented
-                std::cout << "50 prozent erreicht wie vergrößern!\n";
+                std::cout << "50 prozent erreicht wir vergrößern!\n";
+
+                //the 2 lines below are needed for resize but i did not put them into resize function so we can use resize function also for rehash
+                q++; //increase q by 1
+                nmax = pow(2,q); //nmax als nächster 2er-potenz setzen
+
+
                 resize();
         }
 
@@ -182,8 +191,7 @@ void ContDynArray<E,N>::add(const E e[], size_t len) {
 template <typename E, size_t N>
 void ContDynArray<E,N>::resize() {
         size_t oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
-        q++; //increase q by 1
-        nmax = pow(2,q); //nmax als nächster 2er-potenz setzen
+
 
         //save old stuff and allocate space for new stuff
         E * old_H1 = H1;
@@ -196,16 +204,24 @@ void ContDynArray<E,N>::resize() {
         s2 = new Status[nmax]();
         //end of save old stuff and allocate space for new stuff
 
+        //write old elements into new hashtables
         for (size_t i = 0; i < oldnmax; ++i)
                 if (old_s1[i] == Status::belegt) add_(old_H1[i]);
         for (size_t i = 0; i < oldnmax; ++i)
                 if (old_s2[i] == Status::belegt) add_(old_H2[i]);
 
+        //delete temp arrays
         delete[] old_H1;
         delete[] old_H2;
         delete[] old_s1;
         delete[] old_s2;
+}
 
+template <typename E, size_t N>
+void ContDynArray<E,N>::rehash() {
+  size_t a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
+  size_t a2 = random_nmbr();
+  resize();
 }
 
 template <typename E, size_t N>

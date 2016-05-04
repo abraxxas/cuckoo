@@ -124,13 +124,20 @@ void ContDynArray<E,N>::add(const E e[], size_t len) {
                                 std::cout << "We added the value to H1" << "\n";
                         } else if(!(std::find(H2_indices.begin(), H2_indices.end(), hash2(e[i])) != H2_indices.end())) {
                                 /* There is no element in H2 at the index position hash2(e[i]) */
-                                E tmp = H1[hash1(e[i])];
-                                H2[hash2(tmp)] = tmp; //move the conflicting element from H1 to H2
+                                E tmp = H1[hash1(e[i])]; //store the element from H1 in a tmp variable
+                                H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
                                 H1[hash1(e[i])] = e[i]; //now insert elemnt into  H1
-                                H2_indices.push_back (hash2(tmp));
+                                H2_indices.push_back (hash2(tmp)); //add index to the vector to indicate there is an element at this index
                                 std::cout << "We moved: " << H2[hash2(tmp)] << " from H1 to H2, and added: " << H1[hash1(e[i])] << " to H1\n";
                         }else{ //both H1 and H2 have something at that their corresponding positions we now need to juggle this arround
 
+                                E tmp = H1[hash1(e[i])]; //store the element from H1 in a tmp variable
+                                E tmp2[1] = {H2[hash2(e[i])]}; //store the element from H2 in a tmp variable
+                                H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
+                                H1[hash1(e[i])] = e[i]; //now insert elemnt into  H1
+                                std::cout << "We moved: " << H2[hash2(tmp)] << " from H1 to H2, and added: " << H1[hash1(e[i])] << " to H1\n";
+                                std::cout << "We will now call add again to add: " << tmp2[0] << " to the hashtable\n";
+                                add(tmp2,1);//call add again to store the element from the tmp2 variable
                         }
 
 
@@ -174,17 +181,17 @@ void ContDynArray<E,N>::remove(const E e[], size_t len) {
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member(const E &e) const {
-        if(H1[hash1(e)] == e){
-          std::cout << "Found in H1\n";
-          return true;
+        if(H1[hash1(e)] == e) {
+                std::cout << "Found in H1\n";
+                return true;
         }
-        else if(H2[hash2(e)] == e){
-          std::cout << "Found in H2\n";
-          return true;
+        else if(H2[hash2(e)] == e) {
+                std::cout << "Found in H2\n";
+                return true;
         }
         else{
-          std::cout << "not found\n";
-          return false;
+                std::cout << "not found\n";
+                return false;
         }
 
 }

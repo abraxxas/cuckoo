@@ -12,6 +12,12 @@
 
  #include <iostream>
  #include "Container.h"
+ #include <math.h>       /* pow */
+ #include <stdlib.h> // For random(), RAND_MAX
+ #include <limits.h> //For CHAR_BIT
+ #include <random> //for random number gen
+
+
 
  class ContDynArrayEmptyException : public ContainerException {
  public:
@@ -24,15 +30,44 @@
    size_t n;
    E * values;
 
+   //http://codereview.stackexchange.com/questions/35220/perfect-hashing-implementation
+   //http://liuluheng.github.io/wiki/public_html/Algorithms/Theory%20of%20Algorithms/Hash%20table.html
+   //http://users.cis.fiu.edu/~weiss/dsaa_c++4/code/
    const int tMax = 10000; // max number of random walk trials
    int K; // number of probes
    size_t number_max; // number of max elements
    size_t number; // number of current elements
+   size_t q=3;//exponent der aktuellen tabellengröße als 2er potenz
    E * H1,H2;
-   int * H1_indices,H2_indices;
-   size_t hash1(const E& e) const { return h(e) % nmax; }
-   size_t hash2(const E& e) const { return (h(e)/nmax) % nmax; }
+   size_t * H1_indices,H2_indices;
 
+   std::random_device rd;     // only used once to initialise (seed) engine
+
+
+   size_t a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
+   size_t a2 = random_nmbr();
+
+   size_t random_nmbr(){
+     std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
+     std::uniform_int_distribution<size_t> uni(0,SIZE_MAX); // guaranteed unbiased
+
+     return uni(rng);
+   }
+
+   // function for calculation of hash
+   size_t hash1(const E& e) const {
+     std::cout << "a1: " << a1 << "\n";
+     std::cout << "a2: " << a2 << "\n";
+     std::cout << "hashValue(e): " <<hashValue(e) << "\n";
+     std::cout << "a1*hashValue(e): " << a1*hashValue(e) << "\n";
+     std::cout << "CHAR_BIT*sizeof(size_t)-q: " << CHAR_BIT*sizeof(size_t)-q << "\n";
+     std::cout << "((a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)): " << ((a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q))  << "\n";
+
+     return (a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q);
+   }
+   size_t hash2(const E& e) const {
+     return (a2*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q);
+   }
 
 
    void sort() const;
@@ -61,7 +96,9 @@
 
  template <typename E, size_t N>
  void ContDynArray<E,N>::add(const E e[], size_t len) {
-   if (n + len > nmax) {
+   for (size_t i = 0; i < len; ++i)
+       hash1(e[i]);
+   /*if (n + len > nmax) {
      auto newnmax = nmax;
      E * newvalues = nullptr;
      while (n + len > newnmax) newnmax = (newnmax*12)/10 + 2;
@@ -74,7 +111,7 @@
    }
    for (size_t i = 0; i < len; ++i)
      if (!member(e[i]))
-       values[n++] = e[i];
+       values[n++] = e[i];*/
  }
 
  template <typename E, size_t N>

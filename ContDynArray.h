@@ -31,6 +31,7 @@ public:
 template <typename E, size_t N=8>
                                 class ContDynArray: public Container<E> {
         size_t nmax;
+        size_t oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
         size_t n;
         E * values;
 
@@ -167,8 +168,6 @@ void ContDynArray<E,N>::add(const E e[], size_t len) {
                 std::cout << "50 prozent erreicht wir vergrößern!\n";
 
                 //the 2 lines below are needed for resize but i did not put them into resize function so we can use resize function also for rehash
-                q++; //increase q by 1
-                nmax = pow(2,q); //nmax als nächster 2er-potenz setzen
 
 
                 resize();
@@ -188,9 +187,9 @@ void ContDynArray<E,N>::add(const E e[], size_t len) {
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::resize() {
-        size_t oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
-
-
+        q++; //increase q by 1
+        oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
+        nmax = pow(2,q); //nmax als nächster 2er-potenz setzen
         //save old stuff and allocate space for new stuff
         E * old_H1 = H1;
         E * old_H2 = H2;
@@ -220,7 +219,30 @@ void ContDynArray<E,N>::rehash() {
         t = 0;//reset t since we have rehashed
         a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
         a2 = random_nmbr();
-        resize();
+        //resize();//call resize to rewrite all elements
+        oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
+        //save old stuff and allocate space for new stuff
+        E * old_H1 = H1;
+        E * old_H2 = H2;
+        Status * old_s1 = s1;
+        Status * old_s2 = s2;
+        H1 = new E[nmax];
+        H2 = new E[nmax];
+        s1 = new Status[nmax]();
+        s2 = new Status[nmax]();
+        //end of save old stuff and allocate space for new stuff
+
+        //write old elements into new hashtables
+        for (size_t i = 0; i < oldnmax; ++i)
+                if (old_s1[i] == Status::belegt) add_(old_H1[i]);
+        for (size_t i = 0; i < oldnmax; ++i)
+                if (old_s2[i] == Status::belegt) add_(old_H2[i]);
+
+        //delete temp arrays
+        delete[] old_H1;
+        delete[] old_H2;
+        delete[] old_s1;
+        delete[] old_s2;
 }
 
 template <typename E, size_t N>

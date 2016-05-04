@@ -37,7 +37,7 @@ template <typename E, size_t N=8>
         //http://codereview.stackexchange.com/questions/35220/perfect-hashing-implementation
         //http://liuluheng.github.io/wiki/public_html/Algorithms/Theory%20of%20Algorithms/Hash%20table.html
         //http://users.cis.fiu.edu/~weiss/dsaa_c++4/code/
-        const int tMax = 10000; // max number of random walk trials
+        const int tMax = 1000; // max number of random walk trials
         int t=0; //number of current walks
         int K; // number of probes
         size_t q=3;//exponent der aktuellen tabellengröße als 2er potenz
@@ -149,14 +149,12 @@ void ContDynArray<E,N>::add_(const E &e) {
                         H1[pos1] = e; //now insert elemnt into  H1
                         std::cout << "We moved: " << H2[hash2(tmp)] << " from H1 to H2, and added: " << H1[pos1] << " to H1\n";
                         std::cout << "We will now call add again to add: " << tmp2 << " to the hashtable\n";
-                        if(t < tMax) {
-                                t++;
-                                add_(tmp2);//call add again to store the element from the tmp2 variable
-                        }
-                        else{
+                        if(t > tMax) {//do we need to rehash?
                                 std::cout << "we need to rehash\n";
                                 rehash();
                         }
+                        t++;
+                        add_(tmp2);//call add again to store the element from the tmp2 variable
                 }
         }
 }
@@ -219,9 +217,10 @@ void ContDynArray<E,N>::resize() {
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::rehash() {
-  size_t a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
-  size_t a2 = random_nmbr();
-  resize();
+        t = 0;//reset t since we have rehashed
+        a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
+        a2 = random_nmbr();
+        resize();
 }
 
 template <typename E, size_t N>

@@ -193,8 +193,8 @@ void ContDynArray<E,N>::resize() {
         E * old_H2 = H2;
         Status * old_s1 = s1;
         Status * old_s2 = s2;
-        H1 = new E[nmax];
-        H2 = new E[nmax];
+        H1 = new E[nmax]();
+        H2 = new E[nmax]();
         s1 = new Status[nmax]();
         s2 = new Status[nmax]();
         //end of save old stuff and allocate space for new stuff
@@ -224,8 +224,8 @@ void ContDynArray<E,N>::rehash() {
         E * old_H2 = H2;
         Status * old_s1 = s1;
         Status * old_s2 = s2;
-        H1 = new E[nmax];
-        H2 = new E[nmax];
+        H1 = new E[nmax]();
+        H2 = new E[nmax]();
         s1 = new Status[nmax]();
         s2 = new Status[nmax]();
         //end of save old stuff and allocate space for new stuff

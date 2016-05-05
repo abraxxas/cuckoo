@@ -44,6 +44,7 @@ template <typename E, size_t N=8>
         size_t q=3;//exponent der aktuellen tabellengröße als 2er potenz
         E * H1;
         E * H2;
+        E max_v,min_v;
 
         //vectors are probably not so cool replace with enums!
         /*std::vector<size_t> H1_indices;
@@ -166,10 +167,6 @@ void ContDynArray<E,N>::add(const E e[], size_t len) {
         if (n + len > nmax) {//do we want to add more values than there is currently space? 50%auslastung
                 //to be implemented
                 std::cout << "50 prozent erreicht wir vergrößern!\n";
-
-                //the 2 lines below are needed for resize but i did not put them into resize function so we can use resize function also for rehash
-
-
                 resize();
         }
 
@@ -259,7 +256,7 @@ void ContDynArray<E,N>::remove(const E e[], size_t len) {
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member1_(const E &e) const {
-        if(H1[hash1(e)] == e) {
+        if(H1[hash1(e)] == e && s1[hash1(e)] == Status::belegt) {
                 return true;
         }
         else{
@@ -270,7 +267,7 @@ bool ContDynArray<E,N>::member1_(const E &e) const {
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member2_(const E &e) const {
-        if(H2[hash2(e)] == e) {
+        if(H2[hash2(e)] == e && s2[hash1(e)] == Status::belegt) {
                 return true;
         }
         else{

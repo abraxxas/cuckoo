@@ -135,20 +135,21 @@ void ContDynArray<E,N>::add_(const E &e) {
                 H1[pos1] = e; //insert elemnt into  H1
                 s1[pos1] = Status::belegt;
                 std::cout << "We added the value:" << e <<" to H1" << " at the index: " <<  pos1 <<"\n";
-        }else{//wenn h2 and entsprechender stelle frei ist
+        }else{//wenn h1 and entsprechender stelle belegt ist
                 E tmp = H1[pos1]; //store the element from H1 in a tmp variable
-                if(s2[hash2(tmp)] != Status::belegt) {
+                if(s2[hash2(tmp)] != Status::belegt) {//h2 and entsprechender stelle ist frei
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
-                        H1[hash1(e)] = e; //now insert elemnt into  H1
+                        H1[pos1] = e; //now insert elemnt into  H1
                         s2[hash2(tmp)] = Status::belegt;
                         std::cout << "We moved the value:" << tmp <<" from H1 at the index:" << pos1 <<  " to H2 at the index: " <<  hash2(tmp) << "\n";
                         std::cout << "and we added the value:" << e <<" to H1" << "\n";
                 }
                 else{ //both H1 and H2 have something at that their corresponding positions we now need to juggle this arround
-                        E tmp = H1[pos1]; //store the element from H1 in a tmp variable
+
+                        H1[pos1] = e; //now insert elemnt into  H1
                         E tmp2 = H2[hash2(tmp)]; //store the element from H2 in a tmp variable
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
-                        H1[pos1] = e; //now insert elemnt into  H1
+
                         std::cout << "We moved: " << H2[hash2(tmp)] << " from H1 to H2, and added: " << H1[pos1] << " to H1\n";
                         std::cout << "We will now call add again to add: " << tmp2 << " to the hashtable\n";
                         if(t > tMax) {//do we need to rehash?

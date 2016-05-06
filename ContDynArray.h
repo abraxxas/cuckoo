@@ -35,16 +35,11 @@ template <typename E, size_t N=8>
         size_t n;
         E * values;
 
-        //http://codereview.stackexchange.com/questions/35220/perfect-hashing-implementation
-        //http://liuluheng.github.io/wiki/public_html/Algorithms/Theory%20of%20Algorithms/Hash%20table.html
-        //http://users.cis.fiu.edu/~weiss/dsaa_c++4/code/
         const int tMax = 1000; // max number of random walk trials
         int t=0; //number of current walks
-        int K; // number of probes
         size_t q=3;//exponent der aktuellen tabellengröße als 2er potenz
         E * H1;
         E * H2;
-        E max_v,min_v;
 
         //vectors are probably not so cool replace with enums!
         /*std::vector<size_t> H1_indices;
@@ -69,13 +64,6 @@ template <typename E, size_t N=8>
 
         // function for calculation of hash
         size_t hash1(const E& e) const {
-                /*std::cout << "a1: " << a1 << "\n";
-                   std::cout << "a2: " << a2 << "\n";
-                   std::cout << "hashValue(e): " <<hashValue(e) << "\n";
-                   std::cout << "a1*hashValue(e): " << a1*hashValue(e) << "\n";
-                   std::cout << "CHAR_BIT*sizeof(size_t)-q: " << CHAR_BIT*sizeof(size_t)-q << "\n";
-                   std::cout << "((a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)): " << ((a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q))  << "\n";*/
-
                 return (a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q);
         }
         size_t hash2(const E& e) const {
@@ -93,7 +81,7 @@ template <typename E, size_t N=8>
 
         void sort() const;
 public:
-        ContDynArray() : nmax {N}, n {0}, values {new E[this->nmax]}, H1 {new E[this->nmax]}, H2 {new E[this->nmax]},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} { }
+        ContDynArray() : nmax {N}, n {0}, values {new E[this->nmax]()}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} { }
         ContDynArray(std::initializer_list<E> el) : ContDynArray() {
                 for (auto e: el) add(e);
         }
@@ -129,33 +117,23 @@ public:
 template <typename E, size_t N>
 void ContDynArray<E,N>::add_(const E &e) {
         size_t pos1 = hash1(e);
-        //size_t pos2 = hash2(e);
-        std::cout << "adding: " << e << "\n";
         if (s1[pos1] != Status::belegt) {//wenn h1 and entsprechender stelle frei ist
                 H1[pos1] = e; //insert elemnt into  H1
                 s1[pos1] = Status::belegt;
-                std::cout << "We added the value:" << e <<" to H1" << " at the index: " <<  pos1 <<"\n";
         }else{//wenn h1 and entsprechender stelle belegt ist
                 E tmp = H1[pos1]; //store the element from H1 in a tmp variable
                 if(s2[hash2(tmp)] != Status::belegt) {//h2 and entsprechender stelle ist frei
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
                         H1[pos1] = e; //now insert elemnt into  H1
                         s2[hash2(tmp)] = Status::belegt;
-                        std::cout << "We moved the value:" << tmp <<" from H1 at the index:" << pos1 <<  " to H2 at the index: " <<  hash2(tmp) << "\n";
-                        std::cout << "and we added the value:" << e <<" to H1" << "\n";
                 }
                 else{ //both H1 and H2 have something at that their corresponding positions we now need to juggle this arround
-
                         H1[pos1] = e; //now insert elemnt into  H1
                         E tmp2 = H2[hash2(tmp)]; //store the element from H2 in a tmp variable
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
-
-                        std::cout << "We moved: " << H2[hash2(tmp)] << " from H1 to H2, and added: " << H1[pos1] << " to H1\n";
-                        std::cout << "We will now call add again to add: " << tmp2 << " to the hashtable\n";
-                        if(t > tMax) {//do we need to rehash?
-                                std::cout << "we need to rehash\n";
+                        
+                        if(t > tMax) //do we need to rehash?
                                 rehash();
-                        }
                         t++;
                         add_(tmp2);//call add again to store the element from the tmp2 variable
                 }
@@ -164,22 +142,15 @@ void ContDynArray<E,N>::add_(const E &e) {
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
-        std::cout << "n: " << n << " len: " << len << " nmax: " << nmax << "\n";
-        if (n + len > nmax) {//do we want to add more values than there is currently space? 50%auslastung
-                //to be implemented
-                std::cout << "50 prozent erreicht wir vergrößern!\n";
+        if (n + len > nmax)
                 resize();
-        }
 
         for (size_t i = 0; i < len; ++i) { //go through all values we where given
-                if (!member(e[i])) { //only execute it he element is neither in H1 nor in H2
+                if (!member(e[i])) { //only execute ifhe element is neither in H1 nor in H2
                         t = 0;//set current walks to 0
                         add_(e[i]);
                         ++n;
-                }else{
-                        std::cout << "this element is already a member of H1 or H2 \n";
                 }
-
         }
 }
 
@@ -246,18 +217,17 @@ void ContDynArray<E,N>::rehash() {
 template <typename E, size_t N>
 void ContDynArray<E,N>::remove(const E e[], size_t len) {
         for (size_t i = 0; i < len; ++i) {
-                for (size_t j = 0; j < n; ++j) {
-                        if (values[j] == e[i]) {
-                                values[j] = values[--n];
-                                break;
-                        }
+                if (member1_(e[i])) {
+                        s1[hash1(e[i])] = Status::wiederfrei;
+                }else if (member2_(e[i])) {
+                        s2[hash1(e[i])] = Status::wiederfrei;
                 }
         }
 }
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member1_(const E &e) const {
-        if(H1[hash1(e)] == e && s1[hash1(e)] == Status::belegt) {
+        if(s1[hash1(e)] == Status::belegt && H1[hash1(e)] == e ) {
                 return true;
         }
         else{
@@ -268,7 +238,7 @@ bool ContDynArray<E,N>::member1_(const E &e) const {
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member2_(const E &e) const {
-        if(H2[hash2(e)] == e && s2[hash1(e)] == Status::belegt) {
+        if(s2[hash1(e)] == Status::belegt && H2[hash2(e)] == e ) {
                 return true;
         }
         else{
@@ -291,21 +261,31 @@ bool ContDynArray<E,N>::member(const E &e) const {
 template <typename E, size_t N>
 E ContDynArray<E,N>::min() const {
         if (this->empty()) throw ContDynArrayEmptyException();
-        E rc = values[0];
-        for (size_t i = 1; i < n; ++i) {
-                if (rc > values[i]) rc = values[i];
+        E * rc = nullptr;
+        for (size_t i = 0; i < nmax; ++i) {
+                if (s1[i] == Status::belegt && (!rc || *rc > H1[i]))
+                        rc = &H1[i];
         }
-        return rc;
+        for (size_t i = 0; i < nmax; ++i) {
+                if (s2[i] == Status::belegt && (!rc || *rc > H2[i] ))
+                        rc = &H2[i];
+        }
+        return *rc;
 }
 
 template <typename E, size_t N>
 E ContDynArray<E,N>::max() const {
         if (this->empty()) throw ContDynArrayEmptyException();
-        E rc = values[0];
-        for (size_t i = 1; i < n; ++i) {
-                if (values[i] > rc) rc = values[i];
+        E * rc = nullptr;
+        for (size_t i = 0; i < nmax; ++i) {
+                if (s1[i] == Status::belegt && (!rc || H1[i] > *rc))
+                        rc = &H1[i];
         }
-        return rc;
+        for (size_t i = 0; i < nmax; ++i) {
+                if (s2[i] == Status::belegt && (!rc || H2[i] > *rc))
+                        rc = &H2[i];
+        }
+        return *rc;
 }
 
 template <typename E, size_t N>

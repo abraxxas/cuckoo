@@ -33,11 +33,10 @@ template <typename E, size_t N=8>
         size_t nmax;
         size_t oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
         size_t n;
-        E * values;
 
         const int tMax = 1000; // max number of random walk trials
         int t=0; //number of current walks
-        size_t q=3;//exponent der aktuellen tabellengröße als 2er potenz
+        size_t q;//exponent der aktuellen tabellengröße als 2er potenz
         E * H1;
         E * H2;
 
@@ -70,6 +69,16 @@ template <typename E, size_t N=8>
                 return (a2*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q);
         }
 
+        size_t pot(size_t size) {
+              size_t h=0;
+              size_t th=h;
+              while(size>(h)){
+                ++th;
+                h=(1<<th);
+              }
+              return (h);
+        }
+
         void add_(const E&);
 
         void resize();
@@ -81,13 +90,12 @@ template <typename E, size_t N=8>
 
         void sort() const;
 public:
-        ContDynArray() : nmax {N}, n {0}, values {new E[this->nmax]()}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} { }
+        ContDynArray() : nmax {(N<1) ? 2:pot(N)}, n {0},q{size_t(sqrt (N))}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} { }
         ContDynArray(std::initializer_list<E> el) : ContDynArray() {
                 for (auto e: el) add(e);
         }
 
         virtual ~ContDynArray() {
-                delete[] values;
                 delete[] H1;
                 delete[] H2;
                 delete[] s1;
@@ -131,7 +139,7 @@ void ContDynArray<E,N>::add_(const E &e) {
                         H1[pos1] = e; //now insert elemnt into  H1
                         E tmp2 = H2[hash2(tmp)]; //store the element from H2 in a tmp variable
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
-                        
+
                         if(t > tMax) //do we need to rehash?
                                 rehash();
                         t++;
@@ -305,7 +313,7 @@ std::ostream& ContDynArray<E,N>::print(std::ostream& o) const {
 template <typename E, size_t N>
 size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) const {
         size_t rc = 0;
-        if (order != dontcare) sort();
+        /*if (order != dontcare) sort();
         try {
                 if (order == descending) {
                         for (size_t i = n; i--; ) {
@@ -319,18 +327,18 @@ size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) c
                         }
                 }
         } catch (...) {
-        }
+        }*/
         return rc;
 }
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::sort() const {  // Achtung, O(n*n)
-        for (size_t i = 0; i < n; ++i) {
+        /*for (size_t i = 0; i < n; ++i) {
                 size_t min = i;
                 for (size_t j = i+1; j < n; ++j)
                         if (values[min] > values[j]) min = j;
                 std::swap(values[min], values[i]);
-        }
+        }*/
 }
 
  #endif //CONTDYNARRAY_H

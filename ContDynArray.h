@@ -28,13 +28,13 @@ public:
         }
 };
 
-template <typename E, size_t N=8>
+template <typename E, size_t N=7>
                                 class ContDynArray: public Container<E> {
         size_t nmax;
         size_t oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
         size_t n;
 
-        const int tMax = 100; // max number of random walk trials
+        const int tMax = 10; // max number of random walk trials
         int t=0; //number of current walks
         size_t q;//exponent der aktuellen tabellengröße als 2er potenz
         E * H1;
@@ -78,7 +78,7 @@ template <typename E, size_t N=8>
 
         void add_(const E&);
 
-        void resize();
+        void resize(size_t nmaxnew);
         void rehash();
 
 
@@ -87,7 +87,7 @@ template <typename E, size_t N=8>
 
         void sort() const;
 public:
-        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {size_t(sqrt (N))}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} { }
+        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {size_t(sqrt (nmax))}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} { }
         ContDynArray(std::initializer_list<E> el) : ContDynArray() {
                 for (auto e: el) add(e);
         }
@@ -123,7 +123,6 @@ template <typename E, size_t N>
 void ContDynArray<E,N>::add_(const E &e) {
         size_t pos1 = hash1(e);
 
-
         if (s1[pos1] != Status::belegt) {//wenn h1 and entsprechender stelle frei ist
                 H1[pos1] = e; //insert elemnt into  H1
                 s1[pos1] = Status::belegt;
@@ -149,7 +148,7 @@ void ContDynArray<E,N>::add_(const E &e) {
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
         if (n + len > nmax)
-                resize();
+                resize(size_t(pow(2,++q)));
 
         for (size_t i = 0; i < len; ++i) { //go through all values we where given
                 if (!member(e[i])) { //only execute ifhe element is neither in H1 nor in H2
@@ -161,10 +160,9 @@ void ContDynArray<E,N>::add(const E e[], size_t len) {
 }
 
 template <typename E, size_t N>
-void ContDynArray<E,N>::resize() {
-        q++; //increase q by 1
+void ContDynArray<E,N>::resize(size_t nmaxnew) {
         oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
-        nmax = pow(2,q); //nmax als nächster 2er-potenz setzen
+        nmax = nmaxnew; //nmax als nächster 2er-potenz setzen
         //save old stuff and allocate space for new stuff
         E * old_H1 = H1;
         E * old_H2 = H2;
@@ -194,30 +192,8 @@ void ContDynArray<E,N>::rehash() {
         t = 0;//reset t since we have rehashed
         a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
         a2 = random_nmbr();
-        //resize();//call resize to rewrite all elements
-        oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
-        //save old stuff and allocate space for new stuff
-        E * old_H1 = H1;
-        E * old_H2 = H2;
-        Status * old_s1 = s1;
-        Status * old_s2 = s2;
-        H1 = new E[nmax]();
-        H2 = new E[nmax]();
-        s1 = new Status[nmax]();
-        s2 = new Status[nmax]();
-        //end of save old stuff and allocate space for new stuff
+        resize(nmax);//call resize to rewrite all elements
 
-        //write old elements into new hashtables
-        for (size_t i = 0; i < oldnmax; ++i)
-                if (old_s1[i] == Status::belegt) add_(old_H1[i]);
-        for (size_t i = 0; i < oldnmax; ++i)
-                if (old_s2[i] == Status::belegt) add_(old_H2[i]);
-
-        //delete temp arrays
-        delete[] old_H1;
-        delete[] old_H2;
-        delete[] old_s1;
-        delete[] old_s2;
 }
 
 template <typename E, size_t N>

@@ -150,11 +150,11 @@ void ContDynArray<E,N>::add_(const E &e) {
 
                         if(t > tMax) {//do we need to rehash?
                           std::cout << "We need to rehash!\n" << "t: " << t << "\n";
+                          t = 0;//reset t since we have rehashed
                           rehash();
 
                         }
                         t++;
-                        std::cout<<"t is now: " << t << "\n";
                         add_(tmp2);//call add again to store the element from the tmp2 variable
                 }
         }
@@ -162,9 +162,7 @@ void ContDynArray<E,N>::add_(const E &e) {
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
-        if (n + len > nmax*0.8){
-            std::cout << "We need to resize!\n";
-            std::cout << "nmax: " << nmax << " q: " << q << "\n";
+        if (n + len > nmax*0.6){
             resize(size_t(pow(2,++q)));
         }
 
@@ -209,8 +207,6 @@ void ContDynArray<E,N>::resize(size_t nmaxnew) {
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::rehash() {
-  t = 0;//reset t since we have rehashed
-
         a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
         a2 = random_nmbr();
         resize(nmax);//call resize to rewrite all elements

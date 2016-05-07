@@ -149,7 +149,7 @@ void ContDynArray<E,N>::add_(const E &e) {
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
 
                         if(t > tMax) {//do we need to rehash?
-                          std::cout << "We need to rehash!\n" << "t: " << t << "\n";
+                          //std::cout << "We need to rehash!\n" << "t: " << t << "\n";
                           t = 0;//reset t since we have rehashed
                           rehash();
 
@@ -162,7 +162,7 @@ void ContDynArray<E,N>::add_(const E &e) {
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
-        if (n + len > nmax*0.6){
+        if (n + len > nmax){
             resize(size_t(pow(2,++q)));
         }
 
@@ -180,7 +180,7 @@ template <typename E, size_t N>
 void ContDynArray<E,N>::resize(size_t nmaxnew) {
         oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
         nmax = nmaxnew; //nmax als nächster 2er-potenz setzen
-        std::cout << "oldnamx: " << oldnmax << " nmaxnew: " << nmaxnew <<"\n";
+        //std::cout << "oldnamx: " << oldnmax << " nmaxnew: " << nmaxnew <<"\n";
         //save old stuff and allocate space for new stuff
         E * old_H1 = H1;
         E * old_H2 = H2;

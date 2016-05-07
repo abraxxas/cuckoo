@@ -34,15 +34,12 @@ template <typename E, size_t N=8>
         size_t oldnmax = nmax;//das brauchen wir um über die alten H1 und H2 zu iterieren
         size_t n;
 
-        const int tMax = 1000; // max number of random walk trials
+        const int tMax = 100; // max number of random walk trials
         int t=0; //number of current walks
         size_t q;//exponent der aktuellen tabellengröße als 2er potenz
         E * H1;
         E * H2;
 
-        //vectors are probably not so cool replace with enums!
-        /*std::vector<size_t> H1_indices;
-           std::vector<size_t> H2_indices;*/
         enum class Status: char { frei, belegt, wiederfrei };
         Status * s1;
         Status * s2;
@@ -70,13 +67,13 @@ template <typename E, size_t N=8>
         }
 
         size_t pot(size_t size) {
-              size_t h=0;
-              size_t th=h;
-              while(size>(h)){
-                ++th;
-                h=(1<<th);
-              }
-              return (h);
+                size_t h=0;
+                size_t th=h;
+                while(size>(h)) {
+                        ++th;
+                        h=(1<<th);
+                }
+                return (h);
         }
 
         void add_(const E&);
@@ -90,7 +87,7 @@ template <typename E, size_t N=8>
 
         void sort() const;
 public:
-        ContDynArray() : nmax {(N<1) ? 2:pot(N)}, n {0},q{size_t(sqrt (N))}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} { }
+        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {size_t(sqrt (N))}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} { }
         ContDynArray(std::initializer_list<E> el) : ContDynArray() {
                 for (auto e: el) add(e);
         }
@@ -125,22 +122,23 @@ public:
 template <typename E, size_t N>
 void ContDynArray<E,N>::add_(const E &e) {
         size_t pos1 = hash1(e);
+
+
         if (s1[pos1] != Status::belegt) {//wenn h1 and entsprechender stelle frei ist
                 H1[pos1] = e; //insert elemnt into  H1
                 s1[pos1] = Status::belegt;
         }else{//wenn h1 and entsprechender stelle belegt ist
                 E tmp = H1[pos1]; //store the element from H1 in a tmp variable
+                H1[pos1] = e; //insert elemnt into  H1
                 if(s2[hash2(tmp)] != Status::belegt) {//h2 and entsprechender stelle ist frei
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
-                        H1[pos1] = e; //now insert elemnt into  H1
                         s2[hash2(tmp)] = Status::belegt;
                 }
                 else{ //both H1 and H2 have something at that their corresponding positions we now need to juggle this arround
-                        H1[pos1] = e; //now insert elemnt into  H1
                         E tmp2 = H2[hash2(tmp)]; //store the element from H2 in a tmp variable
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
 
-                        if(t > tMax) //do we need to rehash?
+                        if(t > tMax)                                 //do we need to rehash?
                                 rehash();
                         t++;
                         add_(tmp2);//call add again to store the element from the tmp2 variable
@@ -228,7 +226,7 @@ void ContDynArray<E,N>::remove(const E e[], size_t len) {
                 if (member1_(e[i])) {
                         s1[hash1(e[i])] = Status::wiederfrei;
                 }else if (member2_(e[i])) {
-                        s2[hash1(e[i])] = Status::wiederfrei;
+                        s2[hash2(e[i])] = Status::wiederfrei;
                 }
         }
 }
@@ -246,7 +244,7 @@ bool ContDynArray<E,N>::member1_(const E &e) const {
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member2_(const E &e) const {
-        if(s2[hash1(e)] == Status::belegt && H2[hash2(e)] == e ) {
+        if(s2[hash2(e)] == Status::belegt && H2[hash2(e)] == e ) {
                 return true;
         }
         else{
@@ -314,20 +312,20 @@ template <typename E, size_t N>
 size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) const {
         size_t rc = 0;
         /*if (order != dontcare) sort();
-        try {
+           try {
                 if (order == descending) {
                         for (size_t i = n; i--; ) {
                                 f(values[i]);
-                                ++rc;
+           ++rc;
                         }
                 } else {
                         for (size_t i = 0; i < n; ++i) {
                                 f(values[i]);
-                                ++rc;
+           ++rc;
                         }
                 }
-        } catch (...) {
-        }*/
+           } catch (...) {
+           }*/
         return rc;
 }
 
@@ -338,7 +336,7 @@ void ContDynArray<E,N>::sort() const {  // Achtung, O(n*n)
                 for (size_t j = i+1; j < n; ++j)
                         if (values[min] > values[j]) min = j;
                 std::swap(values[min], values[i]);
-        }*/
+           }*/
 }
 
  #endif //CONTDYNARRAY_H

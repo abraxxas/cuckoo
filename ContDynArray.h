@@ -60,10 +60,10 @@ template <typename E, size_t N=7>
 
         // function for calculation of hash
         size_t hash1(const E& e) const {
-                return (a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q);
+                return q?((a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)):0;
         }
         size_t hash2(const E& e) const {
-                return (a2*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q);
+                return q?((a2*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)):0;
         }
 
         size_t pot(size_t size) {
@@ -76,7 +76,7 @@ template <typename E, size_t N=7>
                 return (h);
         }
 
-        size_t exp(size_t size) {
+        size_t expt(size_t size) {
                 size_t h=0;
                 size_t th=h;
                 while(size>(h)) {
@@ -97,7 +97,7 @@ template <typename E, size_t N=7>
 
         void sort() const;
 public:
-        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {exp(N)}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} {
+        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {expt(N)}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} {
         }
         ContDynArray(std::initializer_list<E> el) : ContDynArray() {
                 for (auto e: el) add(e);
@@ -108,7 +108,6 @@ public:
                 delete[] H2;
                 delete[] s1;
                 delete[] s2;
-
         }
 
         using Container<E>::add;
@@ -152,7 +151,6 @@ void ContDynArray<E,N>::add_(const E &e) {
                           //std::cout << "We need to rehash!\n" << "t: " << t << "\n";
                           t = 0;//reset t since we have rehashed
                           rehash();
-
                         }
                         t++;
                         add_(tmp2);//call add again to store the element from the tmp2 variable
@@ -162,7 +160,7 @@ void ContDynArray<E,N>::add_(const E &e) {
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
-        if (n + len > nmax){
+        if (n + len > nmax*0.1){
             resize(size_t(pow(2,++q)));
         }
 

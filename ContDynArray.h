@@ -39,10 +39,14 @@ template <typename E, size_t N=7>
         size_t q;//exponent der aktuellen tabellengröße als 2er potenz
         E * H1;
         E * H2;
+        E * H3;
+        E * H4;
 
         enum class Status: char { frei, belegt, wiederfrei };
         Status * s1;
         Status * s2;
+        Status * s3;
+        Status * s4;
 
 
         std::random_device rd; // only used once to initialise (seed) engine
@@ -50,6 +54,8 @@ template <typename E, size_t N=7>
 
         size_t a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
         size_t a2 = random_nmbr();
+        size_t a3 = random_nmbr(); //random numbers should be huge about 18-20 digits
+        size_t a4 = random_nmbr();
 
         size_t random_nmbr(){
                 std::mt19937 rng(rd()); // random-number engine used (Mersenne-Twister in this case)
@@ -60,10 +66,16 @@ template <typename E, size_t N=7>
 
         // function for calculation of hash
         size_t hash1(const E& e) const {
-                return q?((a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)):0;
+                return q ? ((a1*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)) : 0;
         }
         size_t hash2(const E& e) const {
-                return q?((a2*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)):0;
+                return q ? ((a2*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)) : 0;
+        }
+        size_t hash3(const E& e) const {
+                return q ? ((a3*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)) : 0;
+        }
+        size_t hash4(const E& e) const {
+                return q ? ((a4*hashValue(e))>>(CHAR_BIT*sizeof(size_t)-q)) : 0;
         }
 
         size_t pot(size_t size) {
@@ -94,10 +106,12 @@ template <typename E, size_t N=7>
 
         bool member1_(const E& e) const;
         bool member2_(const E& e) const;
+        bool member3_(const E& e) const;
+        bool member4_(const E& e) const;
 
         void sort() const;
 public:
-        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {expt(N)}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} {
+        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {expt(N)}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},H3 {new E[this->nmax]()}, H4 {new E[this->nmax]()}, s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()}, s3 {new Status[this->nmax]()},s4 {new Status[this->nmax]()} {
         }
         ContDynArray(std::initializer_list<E> el) : ContDynArray() {
                 for (auto e: el) add(e);
@@ -146,22 +160,39 @@ void ContDynArray<E,N>::add_(const E &e) {
                 else{ //both H1 and H2 have something at that their corresponding positions we now need to juggle this arround
                         E tmp2 = H2[hash2(tmp)]; //store the element from H2 in a tmp variable
                         H2[hash2(tmp)] = tmp; //move the conflicting element from tmp to H2
+                        if(s3[hash3(tmp2)] != Status::belegt) {//h3 and entsprechender stelle ist frei
+                                H3[hash3(tmp2)] = tmp2; //move the conflicting element from tmp to H2
+                                s3[hash3(tmp2)] = Status::belegt;
+                        }else{//H3 auch belegt
+                                E tmp3 = H3[hash3(tmp2)]; //store conflicting element in tmp variable
+                                H3[hash3(tmp2)] = tmp2; //move the conflicting element from tmp to H2
+                                if(s4[hash4(tmp3)] != Status::belegt) {//H4 ist frei
+                                        H4[hash4(tmp3)] = tmp3;
+                                        s4[hash4(tmp3)] = Status::belegt;
+                                }else{//H4 auch belegt
+                                        E tmp4 = H4[hash4(tmp3)];
+                                        H4[hash4(tmp3)] = tmp3;
 
-                        if(t > tMax) {//do we need to rehash?
-                          //std::cout << "We need to rehash!\n" << "t: " << t << "\n";
-                          t = 0;//reset t since we have rehashed
-                          rehash();
+                                        if(t > tMax) {//do we need to rehash?
+                                                //std::cout << "We need to rehash!\n" << "t: " << t << "\n";
+                                                t = 0;//reset t since we have rehashed
+                                                rehash();
+                                        }
+                                        t++;
+                                        //std::cout << "t++: " << t << "\n";
+                                        add_(tmp4);//call add again to store the element from the tmp2 variable
+                                }
                         }
-                        t++;
-                        add_(tmp2);//call add again to store the element from the tmp2 variable
+
+
                 }
         }
 }
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
-        if (n + len > nmax*0.1){
-            resize(size_t(pow(2,++q)));
+        if (n + len > nmax) {
+                resize(size_t(pow(2,++q)));
         }
 
 
@@ -182,12 +213,20 @@ void ContDynArray<E,N>::resize(size_t nmaxnew) {
         //save old stuff and allocate space for new stuff
         E * old_H1 = H1;
         E * old_H2 = H2;
+        E * old_H3 = H3;
+        E * old_H4 = H4;
         Status * old_s1 = s1;
         Status * old_s2 = s2;
+        Status * old_s3 = s3;
+        Status * old_s4 = s4;
         H1 = new E[nmax]();
         H2 = new E[nmax]();
+        H3 = new E[nmax]();
+        H4 = new E[nmax]();
         s1 = new Status[nmax]();
         s2 = new Status[nmax]();
+        s3 = new Status[nmax]();
+        s4 = new Status[nmax]();
         //end of save old stuff and allocate space for new stuff
 
         //write old elements into new hashtables
@@ -195,12 +234,20 @@ void ContDynArray<E,N>::resize(size_t nmaxnew) {
                 if (old_s1[i] == Status::belegt) add_(old_H1[i]);
         for (size_t i = 0; i < oldnmax; ++i)
                 if (old_s2[i] == Status::belegt) add_(old_H2[i]);
+        for (size_t i = 0; i < oldnmax; ++i)
+                if (old_s3[i] == Status::belegt) add_(old_H3[i]);
+        for (size_t i = 0; i < oldnmax; ++i)
+                if (old_s4[i] == Status::belegt) add_(old_H4[i]);
 
         //delete temp arrays
         delete[] old_H1;
         delete[] old_H2;
+        delete[] old_H3;
+        delete[] old_H4;
         delete[] old_s1;
         delete[] old_s2;
+        delete[] old_s3;
+        delete[] old_s4;
 }
 
 template <typename E, size_t N>
@@ -218,6 +265,10 @@ void ContDynArray<E,N>::remove(const E e[], size_t len) {
                         s1[hash1(e[i])] = Status::wiederfrei;
                 }else if (member2_(e[i])) {
                         s2[hash2(e[i])] = Status::wiederfrei;
+                }else if (member3_(e[i])) {
+                        s3[hash3(e[i])] = Status::wiederfrei;
+                }else if (member4_(e[i])) {
+                        s4[hash4(e[i])] = Status::wiederfrei;
                 }
         }
 }
@@ -245,8 +296,30 @@ bool ContDynArray<E,N>::member2_(const E &e) const {
 }
 
 template <typename E, size_t N>
+bool ContDynArray<E,N>::member3_(const E &e) const {
+        if(s3[hash3(e)] == Status::belegt && H3[hash3(e)] == e ) {
+                return true;
+        }
+        else{
+                return false;
+        }
+
+}
+
+template <typename E, size_t N>
+bool ContDynArray<E,N>::member4_(const E &e) const {
+        if(s4[hash4(e)] == Status::belegt && H4[hash4(e)] == e ) {
+                return true;
+        }
+        else{
+                return false;
+        }
+
+}
+
+template <typename E, size_t N>
 bool ContDynArray<E,N>::member(const E &e) const {
-        if(member1_(e) || member2_(e)) {
+        if(member1_(e) || member2_(e) || member3_(e) || member4_(e)) {
                 return true;
         }
         else{
@@ -295,6 +368,14 @@ std::ostream& ContDynArray<E,N>::print(std::ostream& o) const {
         o << "H2\n";
         for (size_t i = 0; i < nmax; ++i) {
                 o << i << '[' << int(s2[i]) << "] " << H2[i] << '\n';
+        }
+        o << "H3\n";
+        for (size_t i = 0; i < nmax; ++i) {
+                o << i << '[' << int(s3[i]) << "] " << H3[i] << '\n';
+        }
+        o << "H4\n";
+        for (size_t i = 0; i < nmax; ++i) {
+                o << i << '[' << int(s4[i]) << "] " << H4[i] << '\n';
         }
         return o;
 }

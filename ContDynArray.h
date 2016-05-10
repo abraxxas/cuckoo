@@ -24,11 +24,8 @@ virtual const char * what() const noexcept override {
 
 template <typename E, size_t N=16>
 class ContDynArray : public Container<E> {
-size_t nmax;
-size_t oldnmax;       //das brauchen wir um über die alten H1 und H2 zu iterieren
-size_t n;        //rename n and m
+size_t nmax, oldnmax, n, q;
 
-size_t q;       //exponent der aktuellen tabellengröße als 2er potenz
 E * H1;
 E * H2;
 
@@ -37,14 +34,13 @@ Status * s1;
 Status * s2;
 
 
-//std::random_device rd; // only used once to initialise (seed) engine
-std::default_random_engine rd;
+std::random_device rd; // only used once to initialise (seed) engine
 
 size_t a1 = random_nmbr();        //random numbers should be huge about 18-20 digits
 size_t a2 = random_nmbr();
 
 size_t random_nmbr(){
-        //std::mt19937 rng(rd()); // random-number engine used (Mersenne-Twister in this case)
+        std::mt19937 rng(rd()); // random-number engine used (Mersenne-Twister in this case)
         std::uniform_int_distribution<size_t> distribution(0,SIZE_MAX-1);        // guaranteed unbiased
 
         return distribution(rd)|1;
@@ -88,7 +84,7 @@ void rehash(const E&);
 bool member1_(const E& e) const;
 bool member2_(const E& e) const;
 
-void sort() const;
+void sort(size_t l, size_t r, E* applyval) const;
 public:
 ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {expt(N)}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} {
 }
@@ -124,8 +120,8 @@ virtual size_t apply(std::function<void(const E &)> f, Order order = dontcare) c
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add_(const E &e,size_t t) {//Try with a loop now as recurions seem to increase stack size way beyond limit
-  if (n  > (nmax*0.48))
-          resize(1<<(++q));
+        if (n  > (nmax*0.48))
+                resize(size_t(pow(2,++q)));
 
         E element = e;
         while(t) {//as long as we do not have to rehash
@@ -226,33 +222,26 @@ void ContDynArray<E,N>::remove(const E e[], size_t len) {
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member1_(const E &e) const {
-        if(s1[hash1(e)] == Status::belegt && H1[hash1(e)] == e ) {
+        if(s1[hash1(e)] == Status::belegt && H1[hash1(e)] == e )
                 return true;
-        }
-        else{
+        else
                 return false;
-        }
 }
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member2_(const E &e) const {
-        if(s2[hash2(e)] == Status::belegt && H2[hash2(e)] == e ) {
+        if(s2[hash2(e)] == Status::belegt && H2[hash2(e)] == e )
                 return true;
-        }
-        else{
+        else
                 return false;
-
-        }
 }
 
 template <typename E, size_t N>
 bool ContDynArray<E,N>::member(const E &e) const {
-        if(member1_(e) || member2_(e)) {
+        if(member1_(e) || member2_(e))
                 return true;
-        }
-        else{
+        else
                 return false;
-        }
 }
 
 template <typename E, size_t N>
@@ -302,12 +291,64 @@ std::ostream& ContDynArray<E,N>::print(std::ostream& o) const {
 template <typename E, size_t N>
 size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) const {
         size_t rc = 0;
-
+        if (order == dontcare) {
+          try {
+            for (size_t i = 0; i < nmax; ++i) {
+              if (s1[i] == Status::belegt) {
+                f(H1[i]);
+                ++rc;
+              }
+              if (s2[i] == Status::belegt) {
+                f(H2[i]);
+                ++rc;
+              }
+            }
+          } catch (...) {}
+        } else {
+          E * values = new E[n];
+          size_t x = 0;
+          for (size_t i = 0; i < nmax; ++i) {
+            if (s1[i] == Status::belegt) {
+              values[x++] = H1[i];
+            }
+            if (s2[i] == Status::belegt) {
+              values[x++] = H2[i];
+            }
+          }
+          sort(0,n-1, values);
+          try {
+            if (order == descending) {
+              for (size_t i = n; i--;) {
+                f(values[i]);
+                ++rc;
+              }
+            } else {
+              for (size_t i = 0; i < n; ++i) {
+                f(values[i]);
+                ++rc;
+              }
+            }
+          } catch (...) {}
+          delete[] values;
+        }
         return rc;
 }
 
 template <typename E, size_t N>
-void ContDynArray<E,N>::sort() const {  // Achtung, O(n*n)
-
+void ContDynArray<E,N>::sort(size_t l, size_t r, E* applyval) const {  // Achtung, O(n*n)
+        size_t i, j;
+        E pivot;
+        if(r > l) {
+                pivot = applyval[r]; i = l-1; j = r;
+                for(;; ) {
+                        while(pivot > applyval[++i]);
+                        while(applyval[--j] > pivot) if (j == l) break;
+                        if(i >= j) break;
+                        std::swap(applyval[i], applyval[j]);
+                }
+                std::swap(applyval[i], applyval[r]);
+                sort(l, i-1,applyval);
+                sort(i+1, r,applyval);
+        }
 }
 #endif //CONTDYNARRAY_H

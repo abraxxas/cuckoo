@@ -15,107 +15,108 @@
 #include <limits.h> //For CHAR_BIT
 #include <random> //for random number gen
 
-class ContDynArrayEmptyException : public ContainerException {
+class ContDynArrayEmptyException: public ContainerException {
 public:
-virtual const char * what() const noexcept override {
-        return "ContDynArray: empty";
-}
+        virtual const char * what() const noexcept override {
+                return "ContDynArray: empty";
+        }
 };
 
 template <typename E, size_t N=16>
-class ContDynArray : public Container<E> {
-size_t nmax, oldnmax, n, q;
+                                class ContDynArray:public Container<E> {
+        size_t nmax, oldnmax, n, q;
 
-E * H1;
-E * H2;
+        E * H1;
+        E * H2;
 
-enum class Status : char { frei, belegt, wiederfrei };
-Status * s1;
-Status * s2;
+        enum class Status:char { frei, belegt, wiederfrei };
+        Status * s1;
+        Status * s2;
 
 
-std::random_device rd; // only used once to initialise (seed) engine
+        //std::random_device rd; // only used once to initialise (seed) engine
+        std::default_random_engine rd;
+        size_t a1 = random_nmbr(); //random numbers should be huge about 18-20 digits
+        size_t a2 = random_nmbr();
 
-size_t a1 = random_nmbr();        //random numbers should be huge about 18-20 digits
-size_t a2 = random_nmbr();
+        size_t random_nmbr(){
+                std::mt19937 rng(rd()); // random-number engine used (Mersenne-Twister in this case)
+                std::uniform_int_distribution<size_t> distribution(0,SIZE_MAX-1); // guaranteed unbiased
 
-size_t random_nmbr(){
-        std::mt19937 rng(rd()); // random-number engine used (Mersenne-Twister in this case)
-        std::uniform_int_distribution<size_t> distribution(0,SIZE_MAX-1);        // guaranteed unbiased
-
-        return distribution(rd)|1;
-}
+                return distribution(rd)|1;
+        }
 
 // function for calculation of hash
-size_t hash1(const E& e) const {
-        return q ? ((a1*hashValue(e))>>((CHAR_BIT*sizeof(size_t))-q)) : 0;
-}
-size_t hash2(const E& e) const {
-        return q ? ((a2*hashValue(e))>>((CHAR_BIT*sizeof(size_t))-q)) : 0;
-}
+        size_t hash1(const E& e) const {
+                return q ? ((a1*hashValue(e))>>((CHAR_BIT*sizeof(size_t))-q)) : 0;
+        }
+        size_t hash2(const E& e) const {
+                return q ? ((a2*hashValue(e))>>((CHAR_BIT*sizeof(size_t))-q)) : 0;
+        }
 
 //rewrite with pot
-size_t pot(size_t size) {
-        size_t h=0;
-        size_t th=h;
-        while(size>(h)) {
-                ++th;
-                h=(1<<th);
+        size_t pot(size_t size) {
+                size_t h=0;
+                size_t th=h;
+                while(size>(h)) {
+                        ++th;
+                        h=(1<<th);
+                }
+                return (h);
         }
-        return (h);
-}
 
-size_t expt(size_t size) {
-        size_t h=0;
-        size_t th=h;
-        while(size>(h)) {
-                ++th;
-                h=(1<<th);
+        size_t expt(size_t size) {
+                size_t h=0;
+                size_t th=h;
+                while(size>(h)) {
+                        ++th;
+                        h=(1<<th);
+                }
+                return (th);
         }
-        return (th);
-}
 
-void add_(const E&, size_t t);
+        void add_(const E&, size_t t);
 
-void resize(size_t nmaxnew);
-void rehash(const E&);
+        void resize(size_t nmaxnew);
+        void rehash(const E&);
 
 
-bool member1_(const E& e) const;
-bool member2_(const E& e) const;
+        bool member1_(const E& e) const;
+        bool member2_(const E& e) const;
 
-void sort(size_t l, size_t r, E* applyval) const;
+        void sort(size_t l, size_t r, E* applyval) const;
 public:
-ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {expt(N)}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} {
-}
-ContDynArray(std::initializer_list<E> el) : ContDynArray() {
-        for (auto e: el) add(e);
-}
+        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {expt(N)}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} {
+        }
+        ContDynArray(std::initializer_list<E> el) : ContDynArray() {
+                for (auto e: el) add(e);
+        }
 
-virtual ~ContDynArray() {
-        delete[] H1;
-        delete[] H2;
-        delete[] s1;
-        delete[] s2;
-}
+        virtual ~ContDynArray() {
+                delete[] H1;
+                delete[] H2;
+                delete[] s1;
+                delete[] s2;
+        }
 
-using Container<E>::add;
-virtual void add(const E e[], size_t len) override;
+        using Container<E>::add;
+        virtual void add(const E e[], size_t len) override;
 
-using Container<E>::remove;
-virtual void remove(const E e[], size_t len) override;
+        using Container<E>::remove;
+        virtual void remove(const E e[], size_t len) override;
 
-virtual bool member(const E& e) const override;
-virtual size_t size() const override {
-        return n;
-}
+        virtual bool member(const E& e) const override;
+        virtual size_t size() const override {
+                return n;
+        }
 
-virtual E min() const override;
-virtual E max() const override;
+        virtual E min() const override;
+        virtual E max() const override;
 
-virtual std::ostream& print(std::ostream& o) const override;
+        virtual std::ostream& print(std::ostream& o) const override;
 
-virtual size_t apply(std::function<void(const E &)> f, Order order = dontcare) const override;
+        virtual size_t apply(std::function<void(const E &)> f, Order order = dontcare) const override;
+        void swap( E&, E&) const;
 };
 
 template <typename E, size_t N>
@@ -292,63 +293,104 @@ template <typename E, size_t N>
 size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) const {
         size_t rc = 0;
         if (order == dontcare) {
-          try {
-            for (size_t i = 0; i < nmax; ++i) {
-              if (s1[i] == Status::belegt) {
-                f(H1[i]);
-                ++rc;
-              }
-              if (s2[i] == Status::belegt) {
-                f(H2[i]);
-                ++rc;
-              }
-            }
-          } catch (...) {}
+                try {
+                        for (size_t i = 0; i < nmax; ++i) {
+                                if (s1[i] == Status::belegt) {
+                                        f(H1[i]);
+                                        ++rc;
+                                }
+                        }
+                        for (size_t i = 0; i < nmax; ++i) {
+                                if (s2[i] == Status::belegt) {
+                                        f(H2[i]);
+                                        ++rc;
+                                }
+                        }
+                } catch (...) {
+                }
         } else {
-          E * values = new E[n];
-          size_t x = 0;
-          for (size_t i = 0; i < nmax; ++i) {
-            if (s1[i] == Status::belegt) {
-              values[x++] = H1[i];
-            }
-            if (s2[i] == Status::belegt) {
-              values[x++] = H2[i];
-            }
-          }
-          sort(0,n-1, values);
-          try {
-            if (order == descending) {
-              for (size_t i = n; i--;) {
-                f(values[i]);
-                ++rc;
-              }
-            } else {
-              for (size_t i = 0; i < n; ++i) {
-                f(values[i]);
-                ++rc;
-              }
-            }
-          } catch (...) {}
-          delete[] values;
+                E * values = new E[n];
+                size_t x = 0;
+                for (size_t i = 0; i < nmax; ++i) {
+                        if (s1[i] == Status::belegt) {
+                                values[x++] = H1[i];
+                        }
+
+                }
+                for (size_t i = 0; i < nmax; ++i) {
+                        if (s2[i] == Status::belegt) {
+                                values[x++] = H2[i];
+                        }
+                }
+                sort(0,n-1, values);
+                try {
+                        if (order == descending) {
+                                for (size_t i = n; i--; ) {
+                                        f(values[i]);
+                                        ++rc;
+                                }
+                        } else {
+                                for (size_t i = 0; i < n; ++i) {
+                                        f(values[i]);
+                                        ++rc;
+                                }
+                        }
+                } catch (...) {
+                }
+                delete[] values;
         }
         return rc;
+
+
+
+}
+
+template <typename E, size_t N>
+void ContDynArray<E,N>::swap(E &x, E &y) const {
+        E help = x;
+        x = y;
+        y = help;
 }
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::sort(size_t l, size_t r, E* applyval) const {  // Achtung, O(n*n)
-        size_t i, j;
-        E pivot;
-        if(r > l) {
-                pivot = applyval[r]; i = l-1; j = r;
-                for(;; ) {
-                        while(pivot > applyval[++i]);
-                        while(applyval[--j] > pivot) if (j == l) break;
-                        if(i >= j) break;
-                        std::swap(applyval[i], applyval[j]);
+
+        size_t i = l, j = r;
+        E tmp;
+    //    std::cout << "\n\n" << ((l + r) / 2) << "\n\n";
+        E pivot = applyval[(l + r) / 2];
+
+        //partitionieren
+        while (i <= j) {
+                while (pivot > applyval[i])//move left
+                        i++;
+                while (applyval[j] > pivot) {
+                        if(j==0) {//stupid check so we dont go to size_t limit
+                                break;
+                        }
+                        j--;
                 }
-                std::swap(applyval[i], applyval[r]);
-                sort(l, i-1,applyval);
-                sort(i+1, r,applyval);
+
+                if (i <= j) {
+                      //  std::cout << "\n\n i: " << i << " j: " << j << "\n\n";
+                        std::swap(applyval[i], applyval[j]);
+                        i++;
+                        if(j==0) {//stupid check so we dont go to size_t limit
+                                break;
+                        }
+                        j--;
+                }
         }
+
+        // rekursic aufrufen
+        if (l < j)
+                sort(l, j, applyval);
+        if (i < r)
+                sort(i, r, applyval);
+
+
 }
+
+
+
 #endif //CONTDYNARRAY_H

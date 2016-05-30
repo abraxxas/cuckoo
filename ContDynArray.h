@@ -22,7 +22,7 @@ public:
         }
 };
 
-template <typename E, size_t N=16>
+template <typename E, size_t N=8>
                                 class ContDynArray:public Container<E> {
         size_t nmax, oldnmax, n, q;
 
@@ -86,7 +86,7 @@ template <typename E, size_t N=16>
 
         void sort(size_t l, size_t r, E* applyval) const;
 public:
-        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {expt(N)}, H1 {new E[this->nmax]()}, H2 {new E[this->nmax]()},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} {
+        ContDynArray() : nmax {(N<1) ? 2 : pot(N)}, n {0},q {expt(N)}, H1 {new E[this->nmax]}, H2 {new E[this->nmax]},s1 {new Status[this->nmax]()},s2 {new Status[this->nmax]()} {
         }
         ContDynArray(std::initializer_list<E> el) : ContDynArray() {
                 for (auto e: el) add(e);
@@ -158,9 +158,6 @@ void ContDynArray<E,N>::add_(const E &e,size_t t) {//Try with a loop now as recu
 
 template <typename E, size_t N>
 void ContDynArray<E,N>::add(const E e[], size_t len) {
-
-
-
         for (size_t i = 0; i < len; ++i) { //go through all values we where given
                 if (!member(e[i])) { //only execute ifhe element is neither in H1 nor in H2
                         add_(e[i],(nmax/2+1)); //count=tabellesize/2+1;
@@ -178,8 +175,8 @@ void ContDynArray<E,N>::resize(size_t nmaxnew) {
         E * old_H2 = H2;
         Status * old_s1 = s1;
         Status * old_s2 = s2;
-        H1 = new E[nmax]();
-        H2 = new E[nmax]();
+        H1 = new E[nmax];
+        H2 = new E[nmax];
         s1 = new Status[nmax]();
         s2 = new Status[nmax]();
         n=0;
@@ -292,6 +289,7 @@ std::ostream& ContDynArray<E,N>::print(std::ostream& o) const {
 template <typename E, size_t N>
 size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) const {
         size_t rc = 0;
+        if (n==0) return rc;
         if (order == dontcare) {
                 try {
                         for (size_t i = 0; i < nmax; ++i) {
@@ -299,9 +297,7 @@ size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) c
                                         f(H1[i]);
                                         ++rc;
                                 }
-                        }
-                        for (size_t i = 0; i < nmax; ++i) {
-                                if (s2[i] == Status::belegt) {
+                                if(s2[i] == Status::belegt) {
                                         f(H2[i]);
                                         ++rc;
                                 }
@@ -315,17 +311,16 @@ size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) c
                         if (s1[i] == Status::belegt) {
                                 values[x++] = H1[i];
                         }
-
-                }
-                for (size_t i = 0; i < nmax; ++i) {
-                        if (s2[i] == Status::belegt) {
+                        if(s2[i] == Status::belegt) {
                                 values[x++] = H2[i];
                         }
+
                 }
+
                 sort(0,n-1, values);
                 try {
                         if (order == descending) {
-                                for (size_t i = n; i--; ) {
+                                for (size_t i = n; i-- > 0; ) {
                                         f(values[i]);
                                         ++rc;
                                 }
@@ -342,7 +337,6 @@ size_t ContDynArray<E,N>::apply(std::function<void(const E &)> f, Order order) c
         return rc;
 
 
-
 }
 
 template <typename E, size_t N>
@@ -356,13 +350,12 @@ template <typename E, size_t N>
 void ContDynArray<E,N>::sort(size_t l, size_t r, E* applyval) const {  // Achtung, O(n*n)
 
         size_t i = l, j = r;
-        E tmp;
-    //    std::cout << "\n\n" << ((l + r) / 2) << "\n\n";
-        E pivot = applyval[(l + r) / 2];
+        //    std::cout << "\n\n" << ((l + r) / 2) << "\n\n";
+        E pivot = applyval[r];
 
         //partitionieren
         while (i <= j) {
-                while (pivot > applyval[i])//move left
+                while (pivot > applyval[i]) //move left
                         i++;
                 while (applyval[j] > pivot) {
                         if(j==0) {//stupid check so we dont go to size_t limit
@@ -372,7 +365,7 @@ void ContDynArray<E,N>::sort(size_t l, size_t r, E* applyval) const {  // Achtun
                 }
 
                 if (i <= j) {
-                      //  std::cout << "\n\n i: " << i << " j: " << j << "\n\n";
+                        //  std::cout << "\n\n i: " << i << " j: " << j << "\n\n";
                         std::swap(applyval[i], applyval[j]);
                         i++;
                         if(j==0) {//stupid check so we dont go to size_t limit
